@@ -1,4 +1,5 @@
 from datetime import datetime
+print("Савенков Захар Владимирович 090304 РПИб-о24")
 def extended_gcd(a, b):
     if b == 0:
         return a, 1, 0
