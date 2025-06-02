@@ -1,123 +1,164 @@
-print("Савенков Захар Владимирович 090304 РПИб-о24")
-class ArrayStack:
-    def __init__(self):
-        self.items = []
-    
-    def push(self, item):
-        self.items.append(item)
-    
-    def pop(self):
-        if not self.is_empty():
-            return self.items.pop()
-        raise IndexError("pop from empty stack")
-    
-    def peek(self):
-        if not self.is_empty():
-            return self.items[-1]
-        raise IndexError("peek from empty stack")
-    
-    def is_empty(self):
-        return len(self.items) == 0
-    
-    def size(self):
-        return len(self.items)
 
-class Node:
-    def __init__(self, data):
-        self.data = data
+print("Савенков Захар Владимирович 090304РПИб-о24")
+def fold_and_number_array(k):
+    size = 2 ** k
+    total_cells = size * size
+    grid = [[0 for _ in range(size)] for _ in range(size)]
+    numbering = 1
+    
+    def fold(grid, direction):
+        nonlocal numbering
+        if direction == 'vertical':
+            half = len(grid[0]) // 2
+            for i in range(len(grid)):
+                for j in range(half):
+                    grid[i][j] = numbering
+                    numbering += 1
+            new_grid = [row[:half] for row in grid]
+            return new_grid
+        else:  #горизонтальный
+            half = len(grid) // 2
+            for i in range(half):
+                for j in range(len(grid[0])):
+                    grid[i][j] = numbering
+                    numbering += 1
+            new_grid = grid[:half]
+            return new_grid
+    
+    current_grid = grid
+    directions = ['vertical', 'horizontal'] * k
+    for direction in directions:
+        current_grid = fold(current_grid, direction)
+    
+    # Создание исходной сетки с правильной нумерацией
+    original_size = 2 ** k
+    original_grid = [[0 for _ in range(original_size)] for _ in range(original_size)]
+    stack = []
+    
+    # Моделирование складывания для определения порядка
+    temp_grid = [[(i, j) for j in range(original_size)] for i in range(original_size)]
+    for direction in directions:
+        if direction == 'vertical':
+            temp_grid = [[temp_grid[i][j] if j < len(temp_grid[0])//2 else temp_grid[i][len(temp_grid[0])-1-j]]
+                        for i in range(len(temp_grid)) for j in range(len(temp_grid[0])//2)]
+        else:
+            temp_grid = [[temp_grid[i][j] if i < len(temp_grid)//2 else temp_grid[len(temp_grid)-1-i][j] ]
+                        for i in range(len(temp_grid)//2) for j in range(len(temp_grid[0]))]
+    
+    # Разровняйте последнюю стопку, чтобы получить заказ
+    order = [cell for row in temp_grid for cell in row]
+    
+    # Пронумеруйте исходную сетку в соответствии с порядком
+    for num, (i, j) in enumerate(order, 1):
+        original_grid[i][j] = num
+    
+    return original_grid
+
+
+
+class CellNode:
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
         self.next = None
 
-class LinkedListStack:
-    def __init__(self):
-        self.top_node = None
-        self._size = 0
+def fold_and_number_linked_list(k):
+    size = 2 ** k
+    head = None
+    tail = None
     
-    def push(self, item):
-        new_node = Node(item)
-        new_node.next = self.top_node
-        self.top_node = new_node
-        self._size += 1
+    # Создание исходной сетки в виде связанного списка (не оптимально, но для демонстрации)
+    # Это не лучшее использование связанного списка, но реализует концепцию
+    nodes = [[CellNode(i, j) for j in range(size)] for i in range(size)]
     
-    def pop(self):
-        if not self.is_empty():
-            data = self.top_node.data
-            self.top_node = self.top_node.next
-            self._size -= 1
-            return data
-        raise IndexError("pop from empty stack")
+    # Моделирование складывания
+    current_rows = size
+    current_cols = size
+    numbering = 1
+    directions = ['vertical', 'horizontal'] * k
     
-    def peek(self):
-        if not self.is_empty():
-            return self.top_node.data
-        raise IndexError("peek from empty stack")
+    for direction in directions:
+        if direction == 'vertical' and current_cols > 1:
+            half_col = current_cols // 2
+            for i in range(current_rows):
+                for j in range(half_col):
+                    nodes[i][j].next = nodes[i][current_cols - 1 - j]
+            current_cols = half_col
+        elif direction == 'horizontal' and current_rows > 1:
+            half_row = current_rows // 2
+            for i in range(half_row):
+                for j in range(current_cols):
+                    nodes[i][j].next = nodes[current_rows - 1 - i][j]
+            current_rows = half_row
     
-    def is_empty(self):
-        return self.top_node is None
+    # Обход связанной структуры для присвоения номеров
+    visited = set()
+    current = nodes[0][0]
+    numbering = 1
+    result_grid = [[0 for _ in range(size)] for _ in range(size)]
     
-    def size(self):
-        return self._size
+    while current and numbering <= size * size:
+        if (current.row, current.col) not in visited:
+            result_grid[current.row][current.col] = numbering
+            visited.add((current.row, current.col))
+            numbering += 1
+        current = current.next
+    
+    return result_grid
 
-from collections import deque
 
-class DequeStack:
-    def __init__(self):
-        self.items = deque()
+
+
+import numpy as np
+
+def fold_and_number_numpy(k):
+    size = 2 ** k
+    grid = np.zeros((size, size), dtype=int)
     
-    def push(self, item):
-        self.items.append(item)
+    # Моделирование процесса складывания для определения порядка
+    indices = np.array([[(i, j) for j in range(size)] for i in range(size)])
     
-    def pop(self):
-        if not self.is_empty():
-            return self.items.pop()
-        raise IndexError("pop from empty stack")
+    for fold_step in range(1, k+1):
+        # Вертикальный сгиб (вправо под левый)
+        if indices.shape[1] > 1:
+            left = indices[:, :indices.shape[1]//2]
+            right = np.flip(indices[:, indices.shape[1]//2:], axis=1)
+            indices = np.concatenate((left, right), axis=0)
+        
+        # Горизонтальный фальцовка (снизу под верх)
+        if indices.shape[0] > 1:
+            top = indices[:indices.shape[0]//2]
+            bottom = np.flip(indices[indices.shape[0]//2:], axis=0)
+            indices = np.concatenate((top, bottom), axis=1)
     
-    def peek(self):
-        if not self.is_empty():
-            return self.items[-1]
-        raise IndexError("peek from empty stack")
+    # Выровняйте индексы, чтобы получить заказ
+    order = indices.reshape(-1, 2)
     
-    def is_empty(self):
-        return len(self.items) == 0
+    # Присваивайте номера в соответствии с порядком
+    for num, (i, j) in enumerate(order, 1):
+        grid[i, j] = num
     
-    def size(self):
-        return len(self.items)
+    return grid
+
 
 import timeit
 
-def test_stack(stack_class, operations):
-    stack = stack_class()
-    for op in operations:
-        if op == 'push':
-            stack.push(1)
-        elif op == 'pop':
-            if not stack.is_empty():
-                stack.pop()
-
-# Тестовые данные
-push_ops = ['push'] * 100000
-pop_ops = ['pop'] * 100000
-mixed_ops = []
-for i in range(50000):
-    mixed_ops.extend(['push', 'pop'])
-
-# Измерение производительности
-def measure_performance():
-    print("Тест с push операциями:")
-    for cls in [ArrayStack, LinkedListStack, DequeStack]:
-        time = timeit.timeit(lambda: test_stack(cls, push_ops), number=10)
-        print(f"{cls.__name__}: {time:.5f} сек")
+def test_performance():
+    k_values = [2, 3, 4, 5]  # Тестирование для различных размеров
     
-    print("\nТест с pop операциями:")
-    for cls in [ArrayStack, LinkedListStack, DequeStack]:
-        stack = cls()
-        for _ in range(100000):  # предварительно заполняем стек
-            stack.push(1)
-        time = timeit.timeit(lambda: test_stack(cls, pop_ops), number=10)
-        print(f"{cls.__name__}: {time:.5f} сек")
-    
-    print("\nТест с чередующимися push/pop операциями:")
-    for cls in [ArrayStack, LinkedListStack, DequeStack]:
-        time = timeit.timeit(lambda: test_stack(cls, mixed_ops), number=10)
-        print(f"{cls.__name__}: {time:.5f} сек")
+    for k in k_values:
+        print(f"\nTesting for k={k} (grid size {2**k}x{2**k})")
+        
+        # Реализация тестового массива
+        time_array = timeit.timeit(lambda: fold_and_number_array(k), number=1)
+        print(f"Array implementation: {time_array:.6f} sec")
+        
+        # Реализация тестового связанного списка
+        time_ll = timeit.timeit(lambda: fold_and_number_linked_list(k), number=1)
+        print(f"Linked list implementation: {time_ll:.6f} sec")
+        
+        # Тестовая реализация numpy
+        time_np = timeit.timeit(lambda: fold_and_number_numpy(k), number=1)
+        print(f"Numpy implementation: {time_np:.6f} sec")
 
-measure_performance()                        
+test_performance()
