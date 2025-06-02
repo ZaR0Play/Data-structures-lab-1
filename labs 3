@@ -1,0 +1,123 @@
+print("Савенков Захар Владимирович 090304 РПИб-о24")
+class ArrayStack:
+    def __init__(self):
+        self.items = []
+    
+    def push(self, item):
+        self.items.append(item)
+    
+    def pop(self):
+        if not self.is_empty():
+            return self.items.pop()
+        raise IndexError("pop from empty stack")
+    
+    def peek(self):
+        if not self.is_empty():
+            return self.items[-1]
+        raise IndexError("peek from empty stack")
+    
+    def is_empty(self):
+        return len(self.items) == 0
+    
+    def size(self):
+        return len(self.items)
+
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+
+class LinkedListStack:
+    def __init__(self):
+        self.top_node = None
+        self._size = 0
+    
+    def push(self, item):
+        new_node = Node(item)
+        new_node.next = self.top_node
+        self.top_node = new_node
+        self._size += 1
+    
+    def pop(self):
+        if not self.is_empty():
+            data = self.top_node.data
+            self.top_node = self.top_node.next
+            self._size -= 1
+            return data
+        raise IndexError("pop from empty stack")
+    
+    def peek(self):
+        if not self.is_empty():
+            return self.top_node.data
+        raise IndexError("peek from empty stack")
+    
+    def is_empty(self):
+        return self.top_node is None
+    
+    def size(self):
+        return self._size
+
+from collections import deque
+
+class DequeStack:
+    def __init__(self):
+        self.items = deque()
+    
+    def push(self, item):
+        self.items.append(item)
+    
+    def pop(self):
+        if not self.is_empty():
+            return self.items.pop()
+        raise IndexError("pop from empty stack")
+    
+    def peek(self):
+        if not self.is_empty():
+            return self.items[-1]
+        raise IndexError("peek from empty stack")
+    
+    def is_empty(self):
+        return len(self.items) == 0
+    
+    def size(self):
+        return len(self.items)
+
+import timeit
+
+def test_stack(stack_class, operations):
+    stack = stack_class()
+    for op in operations:
+        if op == 'push':
+            stack.push(1)
+        elif op == 'pop':
+            if not stack.is_empty():
+                stack.pop()
+
+# Тестовые данные
+push_ops = ['push'] * 100000
+pop_ops = ['pop'] * 100000
+mixed_ops = []
+for i in range(50000):
+    mixed_ops.extend(['push', 'pop'])
+
+# Измерение производительности
+def measure_performance():
+    print("Тест с push операциями:")
+    for cls in [ArrayStack, LinkedListStack, DequeStack]:
+        time = timeit.timeit(lambda: test_stack(cls, push_ops), number=10)
+        print(f"{cls.__name__}: {time:.5f} сек")
+    
+    print("\nТест с pop операциями:")
+    for cls in [ArrayStack, LinkedListStack, DequeStack]:
+        stack = cls()
+        for _ in range(100000):  # предварительно заполняем стек
+            stack.push(1)
+        time = timeit.timeit(lambda: test_stack(cls, pop_ops), number=10)
+        print(f"{cls.__name__}: {time:.5f} сек")
+    
+    print("\nТест с чередующимися push/pop операциями:")
+    for cls in [ArrayStack, LinkedListStack, DequeStack]:
+        time = timeit.timeit(lambda: test_stack(cls, mixed_ops), number=10)
+        print(f"{cls.__name__}: {time:.5f} сек")
+
+measure_performance()                        
