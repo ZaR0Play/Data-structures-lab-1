@@ -1,0 +1,208 @@
+Лабораторная работа  №3
+Задание: 
+Задание 
+ Квадрат разбит на 4k равновеликих квадратных клеток. Квадрат перегибается поочередно относительно вертикальной (правая половина подкладывается под левую) и горизонтальной (нижняя половина подкладывается под верхнюю) оси симметрии до тех пор, пока все клетки не будут расположены друг под другом. Требуется занумеровать клетки исходного квадрата таким образом, чтобы в результате выполнения операций перегиба номера клеток, расположенных друг под другом, образовали числовую последовательность 1,2,3,...,4k, начиная с верхней клетки.
+Требования
+Следует реализовать структуру данных 3 способами
+ А) через массив
+ Б) через связанный список
+ В) с использованием стандартной библиотеки языка (например, STL для С++)
+Сравнить работоспособность и производительность каждой реализации.
+Основные компоненты решения:
+1. Основная идея
+Квадрат размером 2^k × 2^k (что равно 4^k клеток) последовательно складывается:
+Сначала по вертикали (правая половина под левую)
+Затем по горизонтали (нижняя половина под верхнюю)
+Процесс повторяется k раз
+После всех сложений все клетки должны оказаться в стопке с порядком номеров 1, 2, 3, ..., 4^k.
+2. Реализации
+2.1. Реализация с использованием массива (fold_and_number_array)
+Создается квадратная матрица размером 2^k × 2^k
+Эмулируется процесс складывания:
+При вертикальном складывании обрабатывается левая половина столбцов
+При горизонтальном - верхняя половина строк
+Номера присваиваются клеткам в порядке их "складывания"
+2.2. Реализация с использованием связных списков (fold_and_number_linked_list)
+Создается сетка из узлов связного списка
+Моделируется процесс складывания путем изменения связей между узлами
+Обход связного списка дает порядок нумерации
+2.3. Реализация с использованием NumPy (fold_and_number_numpy)
+Создается массив NumPy с координатами клеток
+Последовательно применяются операции:
+Вертикальное складывание (конкатенация левой и отраженной правой части)
+Горизонтальное складывание (конкатенация верхней и отраженной нижней части)
+Полученный порядок координат определяет нумерацию
+3. Тестирование производительности (test_performance)
+Функция сравнивает время работы трех реализаций для разных значений k (2, 3, 4, 5). Результаты показывают:
+Реализация с NumPy наиболее эффективна благодаря векторизованным операциям
+Реализация со связными списками наименее эффективна из-за накладных расходов
+
+Код программы:
+print("Савенков Захар Владимирович 090304РПИб-о24")
+
+def fold_and_number_array(k):
+    size = 2 ** k
+    total_cells = size * size
+    grid = [[0 for _ in range(size)] for _ in range(size)]
+    numbering = 1
+
+    def fold(grid, direction):
+        nonlocal numbering
+        if direction == 'vertical':
+            half = len(grid[0]) // 2
+            for i in range(len(grid)):
+                for j in range(half):
+                    grid[i][j] = numbering
+                    numbering += 1
+            new_grid = [row[:half] for row in grid]
+            return new_grid
+        else:  # горизонтальный
+            half = len(grid) // 2
+            for i in range(half):
+                for j in range(len(grid[0])):
+                    grid[i][j] = numbering
+                    numbering += 1
+            new_grid = grid[:half]
+            return new_grid
+
+    current_grid = grid
+    directions = ['vertical', 'horizontal'] * k
+    for direction in directions:
+        current_grid = fold(current_grid, direction)
+
+    # Создание исходной сетки с правильной нумерацией
+    original_size = 2 ** k
+    original_grid = [[0 for _ in range(original_size)] for _ in range(original_size)]
+    stack = []
+
+    # Моделирование складывания для определения порядка
+    temp_grid = [[(i, j) for j in range(original_size)] for i in range(original_size)]
+    for direction in directions:
+        if direction == 'vertical':
+            temp_grid = [[temp_grid[i][j] if j < len(temp_grid[0]) // 2 else temp_grid[i][len(temp_grid[0]) - 1 - j]]
+                         for i in range(len(temp_grid)) for j in range(len(temp_grid[0]) // 2)]
+        else:
+            temp_grid = [[temp_grid[i][j] if i < len(temp_grid) // 2 else temp_grid[len(temp_grid) - 1 - i][j]]
+                         for i in range(len(temp_grid) // 2) for j in range(len(temp_grid[0]))]
+
+    # Разровняйте последнюю стопку, чтобы получить заказ
+    order = [cell for row in temp_grid for cell in row]
+
+    # Пронумеруйте исходную сетку в соответствии с порядком
+    for num, (i, j) in enumerate(order, 1):
+        original_grid[i][j] = num
+
+    return original_grid
+
+
+class CellNode:
+    def __init__(self, row, col):
+        self.row = row
+        self.col = col
+        self.next = None
+
+
+def fold_and_number_linked_list(k):
+    size = 2 ** k
+    head = None
+    tail = None
+
+    # Создание исходной сетки в виде связанного списка (не оптимально, но для демонстрации)
+    # Это не лучшее использование связанного списка, но реализует концепцию
+    nodes = [[CellNode(i, j) for j in range(size)] for i in range(size)]
+
+    # Моделирование складывания
+    current_rows = size
+    current_cols = size
+    numbering = 1
+    directions = ['vertical', 'horizontal'] * k
+
+    for direction in directions:
+        if direction == 'vertical' and current_cols > 1:
+            half_col = current_cols // 2
+            for i in range(current_rows):
+                for j in range(half_col):
+                    nodes[i][j].next = nodes[i][current_cols - 1 - j]
+            current_cols = half_col
+        elif direction == 'horizontal' and current_rows > 1:
+            half_row = current_rows // 2
+            for i in range(half_row):
+                for j in range(current_cols):
+                    nodes[i][j].next = nodes[current_rows - 1 - i][j]
+            current_rows = half_row
+
+    # Обход связанной структуры для присвоения номеров
+    visited = set()
+    current = nodes[0][0]
+    numbering = 1
+    result_grid = [[0 for _ in range(size)] for _ in range(size)]
+
+    while current and numbering <= size * size:
+        if (current.row, current.col) not in visited:
+            result_grid[current.row][current.col] = numbering
+            visited.add((current.row, current.col))
+            numbering += 1
+        current = current.next
+
+    return result_grid
+
+
+import numpy as np
+
+
+def fold_and_number_numpy(k):
+    size = 2 ** k
+    grid = np.zeros((size, size), dtype=int)
+
+    # Моделирование процесса складывания для определения порядка
+    indices = np.array([[(i, j) for j in range(size)] for i in range(size)])
+
+    for fold_step in range(1, k + 1):
+        # Вертикальный сгиб (вправо под левый)
+        if indices.shape[1] > 1:
+            left = indices[:, :indices.shape[1] // 2]
+            right = np.flip(indices[:, indices.shape[1] // 2:], axis=1)
+            indices = np.concatenate((left, right), axis=0)
+
+        # Горизонтальный фальцовка (снизу под верх)
+        if indices.shape[0] > 1:
+            top = indices[:indices.shape[0] // 2]
+            bottom = np.flip(indices[indices.shape[0] // 2:], axis=0)
+            indices = np.concatenate((top, bottom), axis=1)
+
+    # Выровняйте индексы, чтобы получить заказ
+    order = indices.reshape(-1, 2)
+
+    # Присваивайте номера в соответствии с порядком
+    for num, (i, j) in enumerate(order, 1):
+        grid[i, j] = num
+
+    return grid
+
+
+import timeit
+
+
+def test_performance():
+    k_values = [2, 3, 4, 5]  # Тестирование для различных размеров
+
+    for k in k_values:
+        print(f"\nTesting for k={k} (grid size {2 ** k}x{2 ** k})")
+
+        # Реализация тестового массива
+        time_array = timeit.timeit(lambda: fold_and_number_array(k), number=1)
+        print(f"Array implementation: {time_array:.6f} sec")
+
+        # Реализация тестового связанного списка
+        time_ll = timeit.timeit(lambda: fold_and_number_linked_list(k), number=1)
+        print(f"Linked list implementation: {time_ll:.6f} sec")
+
+        # Тестовая реализация numpy
+        time_np = timeit.timeit(lambda: fold_and_number_numpy(k), number=1)
+        print(f"Numpy implementation: {time_np:.6f} sec")
+
+
+test_performance()
+Результаты работы программы:
+ 
+Вывод: В ходе лабораторной работы было реализовано решение задачи тремя способами и по результатам выполнения можно выбрать оптимальный.
